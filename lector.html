@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lector de textos en voz alta</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 30px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    p {
+      text-align: center;
+      color: #555;
+    }
+
+    textarea {
+      width: 100%;
+      height: 320px;
+      padding: 15px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .controls,
+    .options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+      justify-content: center;
+    }
+
+    button, select, input {
+      padding: 10px 15px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    button.stop {
+      background: #dc2626;
+    }
+
+    button.stop:hover {
+      background: #b91c1c;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status {
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .note {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔊 Lector de textos en voz alta</h1>
+    <p>Pega cualquier texto y el navegador lo leerá en voz alta.</p>
+
+    <textarea id="text" placeholder="Escribe o pega aquí el texto que quieres escuchar..."></textarea>
+
+    <div class="options">
+      <label>
+        Voz:
+        <select id="voiceSelect"></select>
+      </label>
+
+      <label>
+        Velocidad:
+        <input id="rate" type="range" min="0.5" max="2" step="0.1" value="1" />
+        <span id="rateValue">1</span>
+      </label>
+
+      <label>
+        Tono:
+        <input id="pitch" type="range" min="0.5" max="2" step="0.1" value="1" />
+        <span id="pitchValue">1</span>
+      </label>
+    </div>
+
+    <div class="controls">
+      <button onclick="startReading()">▶️ Leer</button>
+      <button onclick="pauseReading()">⏸️ Pausar</button>
+      <button onclick="resumeReading()">▶️ Reanudar</button>
+      <button class="stop" onclick="stopReading()">⏹️ Parar</button>
+      <button onclick="clearText()">🧹 Limpiar</button>
+    </div>
+
+    <div class="status" id="status">Estado: esperando texto</div>
+
+    <div class="note">
+      Nota: técnicamente los navegadores tienen límites internos por fragmento. Este programa divide textos largos en partes automáticamente para poder leer textos muy grandes.
+    </div>
+  </div>
+
+  <script>
+    const synth = window.speechSynthesis;
+    const textArea = document.getElementById("text");
+    const voiceSelect = document.getElementById("voiceSelect");
+    const rateInput = document.getElementById("rate");
+    const pitchInput = document.getElementById("pitch");
+    const rateValue = document.getElementById("rateValue");
+    const pitchValue = document.getElementById("pitchValue");
+    const statusBox = document.getElementById("status");
+
+    let voices = [];
+    let chunks = [];
+    let currentChunk = 0;
+    let reading = false;
+
+    function loadVoices() {
+      voices = synth.getVoices();
+      voiceSelect.innerHTML = "";
+
+      voices.forEach((voice, index) => {
+        const option = document.createElement("option");
+        option.value = index;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      });
+
+      const spanishVoiceIndex = voices.findIndex(voice => voice.lang.startsWith("es"));
+      if (spanishVoiceIndex >= 0) {
+        voiceSelect.value = spanishVoiceIndex;
+      }
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    loadVoices();
+
+    rateInput.addEventListener("input", () => {
+      rateValue.textContent = rateInput.value;
+    });
+
+    pitchInput.addEventListener("input", () => {
+      pitchValue.textContent = pitchInput.value;
+    });
+
+    function splitText(text, maxLength = 180) {
+      const sentences = text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
+      const result = [];
+      let current = "";
+
+      for (const sentence of sentences) {
+        if ((current + sentence).length > maxLength) {
+          if (current.trim()) result.push(current.trim());
+          current = sentence;
+        } else {
+          current += sentence;
+        }
+      }
+
+      if (current.trim()) result.push(current.trim());
+      return result;
+    }
+
+    function speakChunk() {
+      if (!reading || currentChunk >= chunks.length) {
+        statusBox.textContent = "Estado: lectura terminada";
+        reading = false;
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(chunks[currentChunk]);
+      const selectedVoice = voices[voiceSelect.value];
+
+      if (selectedVoice) utterance.voice = selectedVoice;
+      utterance.rate = parseFloat(rateInput.value);
+      utterance.pitch = parseFloat(pitchInput.value);
+
+      utterance.onstart = () => {
+        statusBox.textContent = `Estado: leyendo parte ${currentChunk + 1} de ${chunks.length}`;
+      };
+
+      utterance.onend = () => {
+        currentChunk++;
+        speakChunk();
+      };
+
+      utterance.onerror = () => {
+        statusBox.textContent = "Estado: ocurrió un error al leer";
+        reading = false;
+      };
+
+      synth.speak(utterance);
+    }
+
+    function startReading() {
+      const text = textArea.value.trim();
+
+      if (!text) {
+        alert("Escribe o pega un texto primero.");
+        return;
+      }
+
+      stopReading();
+
+      chunks = splitText(text);
+      currentChunk = 0;
+      reading = true;
+
+      speakChunk();
+    }
+
+    function pauseReading() {
+      if (synth.speaking && !synth.paused) {
+        synth.pause();
+        statusBox.textContent = "Estado: pausado";
+      }
+    }
+
+    function resumeReading() {
+      if (synth.paused) {
+        synth.resume();
+        statusBox.textContent = "Estado: reanudando lectura";
+      }
+    }
+
+    function stopReading() {
+      reading = false;
+      synth.cancel();
+      statusBox.textContent = "Estado: detenido";
+    }
+
+    function clearText() {
+      stopReading();
+      textArea.value = "";
+      statusBox.textContent = "Estado: texto limpiado";
+    }
+  </script>
+</body>
+</html>

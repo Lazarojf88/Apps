@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lectura Biónica</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+
+      font-family:'Inter', sans-serif;
+
+      min-height:100vh;
+
+      background:
+        radial-gradient(circle at top left, #2563eb 0%, transparent 30%),
+        radial-gradient(circle at bottom right, #7c3aed 0%, transparent 30%),
+        #0f172a;
+
+      display:flex;
+
+      justify-content:center;
+
+      align-items:center;
+
+      padding:20px;
+    }
+
+    .app{
+
+      width:100%;
+
+      max-width:950px;
+
+      background:rgba(255,255,255,0.08);
+
+      backdrop-filter:blur(20px);
+
+      border:1px solid rgba(255,255,255,0.15);
+
+      border-radius:28px;
+
+      padding:30px;
+
+      box-shadow:0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .header{
+
+      text-align:center;
+
+      margin-bottom:25px;
+
+      color:white;
+    }
+
+    .logo{
+
+      font-size:55px;
+
+      margin-bottom:10px;
+    }
+
+    h1{
+
+      font-size:2.5rem;
+
+      font-weight:800;
+
+      margin-bottom:10px;
+    }
+
+    .subtitle{
+
+      color:#cbd5e1;
+
+      font-size:1rem;
+    }
+
+    textarea{
+
+      width:100%;
+
+      min-height:220px;
+
+      border:none;
+
+      border-radius:20px;
+
+      padding:20px;
+
+      background:rgba(255,255,255,0.12);
+
+      color:white;
+
+      font-size:17px;
+
+      outline:none;
+
+      resize:vertical;
+
+      line-height:1.7;
+
+      border:2px solid transparent;
+
+      transition:0.25s;
+    }
+
+    textarea:focus{
+
+      border-color:#60a5fa;
+
+      background:rgba(255,255,255,0.15);
+    }
+
+    textarea::placeholder{
+
+      color:#cbd5e1;
+    }
+
+    .buttons{
+
+      display:flex;
+
+      gap:14px;
+
+      margin-top:18px;
+
+      flex-wrap:wrap;
+    }
+
+    button{
+
+      flex:1;
+
+      min-width:150px;
+
+      border:none;
+
+      border-radius:16px;
+
+      padding:16px;
+
+      font-size:16px;
+
+      font-weight:700;
+
+      cursor:pointer;
+
+      transition:0.25s;
+
+      color:white;
+    }
+
+    button:hover{
+
+      transform:translateY(-3px) scale(1.02);
+    }
+
+    .convert{
+
+      background:linear-gradient(135deg,#2563eb,#3b82f6);
+
+      box-shadow:0 10px 25px rgba(37,99,235,0.35);
+    }
+
+    .copy{
+
+      background:linear-gradient(135deg,#059669,#10b981);
+
+      box-shadow:0 10px 25px rgba(16,185,129,0.35);
+    }
+
+    .clear{
+
+      background:linear-gradient(135deg,#dc2626,#ef4444);
+
+      box-shadow:0 10px 25px rgba(239,68,68,0.35);
+    }
+
+    .output-box{
+
+      margin-top:25px;
+    }
+
+    .output-title{
+
+      margin-bottom:12px;
+
+      font-size:1.1rem;
+
+      font-weight:700;
+
+      color:#e2e8f0;
+    }
+
+    .output{
+
+      background:white;
+
+      border-radius:20px;
+
+      padding:25px;
+
+      min-height:220px;
+
+      line-height:2.1;
+
+      font-size:23px;
+
+      border:1px solid rgba(255,255,255,0.1);
+
+      white-space:pre-wrap;
+
+      word-wrap:break-word;
+    }
+
+    .normal{
+
+      color:#9ca3af;
+    }
+
+    .bold{
+
+      font-weight:900;
+
+      color:#111111;
+    }
+
+    footer{
+
+      margin-top:25px;
+
+      text-align:center;
+
+      color:#cbd5e1;
+
+      font-size:14px;
+    }
+
+    @media(max-width:700px){
+
+      body{
+        padding:10px;
+      }
+
+      .app{
+        padding:20px;
+        border-radius:22px;
+      }
+
+      h1{
+        font-size:2rem;
+      }
+
+      .logo{
+        font-size:42px;
+      }
+
+      textarea{
+        min-height:180px;
+        font-size:16px;
+      }
+
+      .output{
+        font-size:18px;
+        line-height:1.9;
+      }
+
+      button{
+        width:100%;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+
+    <div class="header">
+
+      <div class="logo">
+        ⚡
+      </div>
+
+      <h1>
+        Lectura Biónica
+      </h1>
+
+      <p class="subtitle">
+        Convierte cualquier texto en formato de lectura biónica
+      </p>
+
+    </div>
+
+    <textarea
+      id="inputText"
+      placeholder="Escribe o pega aquí cualquier texto..."
+    ></textarea>
+
+    <div class="buttons">
+
+      <button class="convert" id="convertBtn">
+        ⚡ Convertir
+      </button>
+
+      <button class="copy" id="copyBtn">
+        📋 Copiar
+      </button>
+
+      <button class="clear" id="clearBtn">
+        🗑 Limpiar
+      </button>
+
+    </div>
+
+    <div class="output-box">
+
+      <div class="output-title">
+        Resultado:
+      </div>
+
+      <div id="output" class="output"></div>
+
+    </div>
+
+    <footer>
+      © 2026 Lázaro Jiménez Florido · Todos los derechos reservados
+    </footer>
+
+  </div>
+
+  <script>
+
+    function convertWord(word){
+
+      if(word.trim() === ""){
+        return word;
+      }
+
+      if(word.length <= 2){
+
+        return '<span class="bold">' + word + '</span>';
+      }
+
+      const boldLength = Math.ceil(word.length / 2);
+
+      const boldPart = word.substring(0, boldLength);
+
+      const normalPart = word.substring(boldLength);
+
+      return '<span class="bold">' + boldPart + '</span>' +
+             '<span class="normal">' + normalPart + '</span>';
+    }
+
+    function convertText(){
+
+      const text = document.getElementById("inputText").value;
+
+      const converted = text
+        .split(/(\s+)/)
+        .map(function(part){
+
+          if(part.trim() === ""){
+            return part;
+          }
+
+          return convertWord(part);
+
+        })
+        .join("");
+
+      document.getElementById("output").innerHTML = converted;
+    }
+
+    function copyText(){
+
+      const output = document.getElementById("output").innerText;
+
+      if(!output){
+
+        alert("No hay texto para copiar");
+
+        return;
+      }
+
+      if(navigator.clipboard){
+
+        navigator.clipboard.writeText(output);
+
+        alert("Texto copiado correctamente");
+
+      }else{
+
+        alert("Tu navegador no permite copiar automáticamente");
+      }
+    }
+
+    function clearText(){
+
+      document.getElementById("inputText").value = "";
+
+      document.getElementById("output").innerHTML = "";
+    }
+
+    document
+      .getElementById("convertBtn")
+      .addEventListener("click", convertText);
+
+    document
+      .getElementById("copyBtn")
+      .addEventListener("click", copyText);
+
+    document
+      .getElementById("clearBtn")
+      .addEventListener("click", clearText);
+
+  </script>
+
+</body>
+</html>
